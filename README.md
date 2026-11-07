@@ -1,30 +1,30 @@
-# 📊 DATASUS - Tabela Unificada SIGTAP
+# 📊 DATASUS - SIGTAP Unified Table
 
 [![Sync Status](https://github.com/btran12/SIGTAP/actions/workflows/sync-datasus.yml/badge.svg)](https://github.com/btran12/SIGTAP/actions/workflows/sync-datasus.yml)
-[![Última Atualização](https://img.shields.io/badge/última%20atualização-2026--11--07-blue)](https://github.com/btran12/SIGTAP/commits/main)
+[![Last Update](https://img.shields.io/badge/last%20update-2026--11--07-blue)](https://github.com/btran12/SIGTAP/commits/main)
 
-Repositório automatizado com mirror dos arquivos da **Tabela Unificada do Sistema de Gerenciamento da Tabela de Procedimentos (SIGTAP)** do DATASUS.
+Automated repository mirroring the files of the **Unified Table of the Procedures Table Management System (SIGTAP)** from DATASUS.
 
-## 📦 Tabelas Unificadas (Últimos 6 Meses)
+## 📦 Unified Tables (Last 6 Months)
 
-> **Total:** 6 arquivos | **Tamanho:** 13M
+> **Total:** 6 files | **Size:** 13M
 
-| Arquivo | Período | Tamanho | Download |
-|---------|---------|---------|----------|
-| `TabelaUnificada_202611_v2611051737.zip` | Novembro/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202611_v2611051737.zip) |
-| `TabelaUnificada_202610_v2610271043.zip` | Outubro/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202610_v2610271043.zip) |
-| `TabelaUnificada_202609_v2610261311.zip` | Setembro/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202609_v2610261311.zip) |
-| `TabelaUnificada_202608_v2610231712.zip` | Agosto/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202608_v2610231712.zip) |
-| `TabelaUnificada_202607_v2610231237.zip` | Julho/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202607_v2610231237.zip) |
-| `TabelaUnificada_202606_v2610231231.zip` | Junho/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202606_v2610231231.zip) |
+| File | Period | Size | Download |
+|------|--------|------|----------|
+| `TabelaUnificada_202611_v2611051737.zip` | November/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202611_v2611051737.zip) |
+| `TabelaUnificada_202610_v2610271043.zip` | October/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202610_v2610271043.zip) |
+| `TabelaUnificada_202609_v2610261311.zip` | September/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202609_v2610261311.zip) |
+| `TabelaUnificada_202608_v2610231712.zip` | August/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202608_v2610231712.zip) |
+| `TabelaUnificada_202607_v2610231237.zip` | July/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202607_v2610231237.zip) |
+| `TabelaUnificada_202606_v2610231231.zip` | June/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202606_v2610231231.zip) |
 
-## 📄 Notas Técnicas
+## 📄 Technical Notes
 
-> **Total:** 227 documentos
+> **Total:** 227 documents
 
-Todas as notas técnicas disponíveis estão na pasta [`notastecnicas/`](./notastecnicas/)
+All available technical notes are in the [`notastecnicas/`](./notastecnicas/) folder
 
-### Últimas Notas
+### Latest Notes
 
 - [`nota_tecnica_cgsi_sigtap_2026_11.pdf`](https://github.com/btran12/SIGTAP/blob/main/notastecnicas/nota_tecnica_cgsi_sigtap_2026_11.pdf)
 - [`nota_tecnica_cgsi_sigtap_2026_10.pdf`](https://github.com/btran12/SIGTAP/blob/main/notastecnicas/nota_tecnica_cgsi_sigtap_2026_10.pdf)
@@ -32,59 +32,59 @@ Todas as notas técnicas disponíveis estão na pasta [`notastecnicas/`](./notas
 - [`nota_tecnica_cgsi_sigtap_2026_08.pdf`](https://github.com/btran12/SIGTAP/blob/main/notastecnicas/nota_tecnica_cgsi_sigtap_2026_08.pdf)
 - [`nota_tecnica_cgsi_sigtap_2026_07.pdf`](https://github.com/btran12/SIGTAP/blob/main/notastecnicas/nota_tecnica_cgsi_sigtap_2026_07.pdf)
 
-## 📖 Sobre o SIGTAP
+## 📖 About SIGTAP
 
-A Tabela Unificada do SIGTAP contém:
-- Procedimentos médicos e odontológicos
-- Medicamentos e OPM (Órteses, Próteses e Materiais Especiais)
-- Valores de reembolso do SUS
-- CID-10 e compatibilidades
-- Habilitações e classificações
+The SIGTAP Unified Table contains:
+- Medical and dental procedures
+- Medications and OPM (Orthoses, Prostheses and Special Materials)
+- SUS reimbursement values
+- ICD-10 and compatibility mappings
+- Authorizations and classifications
 
-## 🔄 Atualização Automática
+## 🔄 Automatic Update
 
-Este repositório é atualizado **diariamente às 5h (horário de Brasília)** via GitHub Actions.
+This repository is updated **daily at 5 AM (Brasília time)** via GitHub Actions.
 
-**Fonte oficial:** [FTP DATASUS](ftp://ftp2.datasus.gov.br/pub/sistemas/tup/downloads/)
+**Official source:** [DATASUS FTP](ftp://ftp2.datasus.gov.br/pub/sistemas/tup/downloads/)
 
-## 💻 Como Usar
+## 💻 How to Use
 
 ### Download via wget/curl
 ```bash
-# Última tabela disponível
+# Latest available table
 wget https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202601_v2601221740.zip
 ```
 
-### Clone do repositório
+### Clone the repository
 ```bash
 git clone https://github.com/btran12/SIGTAP.git
 cd SIGTAP/tabelas
 ```
 
-### GitHub API (programático)
+### GitHub API (programmatic)
 ```bash
 curl -s https://api.github.com/repos/btran12/SIGTAP/contents/tabelas | jq -r '.[].download_url'
 ```
 
-## 📊 Estrutura dos Arquivos
+## 📊 File Structure
 
 ```
 SIGTAP/
-├── tabelas/                    # Tabelas unificadas (6 mais recentes)
+├── tabelas/                    # Unified tables (6 most recent)
 │   └── TabelaUnificada_*.zip
-└── notastecnicas/              # Documentação técnica oficial
+└── notastecnicas/              # Official technical documentation
     └── *.pdf
 ```
 
-## ⚖️ Licença e Dados Públicos
+## ⚖️ License and Public Data
 
-Os dados são de **domínio público** e mantidos pelo Ministério da Saúde do Brasil.
-Este repositório apenas facilita o acesso aos arquivos oficiais.
+The data is **public domain** and maintained by the Brazilian Ministry of Health.
+This repository only facilitates access to the official files.
 
 ---
 
 <div align="center">
 
-**🤖 Atualizado automaticamente** | Última execução: 2026-11-07 11:51:21 BRT
+**🤖 Automatically updated** | Last run: 2026-11-07 11:51:21 BRT
 
 </div>

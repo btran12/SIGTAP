@@ -2,8 +2,8 @@ name: Sync DATASUS TUP
 
 on:
   schedule:
-    - cron: '0 8 * * *'  # Diariamente às 8h UTC (5h BRT)
-  workflow_dispatch:  # Permite executar manualmente
+    - cron: '0 8 * * *'  # Daily at 8 AM UTC (5 AM BRT)
+  workflow_dispatch:  # Allows manual execution
 
 permissions:
   contents: write
@@ -22,7 +22,7 @@ jobs:
       - name: Install lftp
         run: sudo apt-get install -y lftp
         
-      - name: Download TabelaUnificada ZIPs (últimos 6)
+      - name: Download TabelaUnificada ZIPs (last 6)
         run: |
           mkdir -p tabelas
           cd tabelas
@@ -31,17 +31,17 @@ jobs:
           set ftp:ssl-allow no;
           open ftp://anonymous:@ftp2.datasus.gov.br;
           cd /pub/sistemas/tup/downloads;
-          cls -1 TabelaUnificada_*.zip > /tmp/arquivos.txt
+          cls -1 TabelaUnificada_*.zip > /tmp/files.txt
           "
           
-          tail -n 6 /tmp/arquivos.txt > /tmp/ultimos6.txt
+          tail -n 6 /tmp/files.txt > /tmp/last6.txt
           
-          echo "📥 Arquivos a serem baixados:"
-          cat /tmp/ultimos6.txt
+          echo "📥 Files to download:"
+          cat /tmp/last6.txt
           
           while IFS= read -r arquivo; do
             if [ ! -f "$arquivo" ]; then
-              echo "⬇️  Baixando: $arquivo"
+              echo "⬇️  Downloading: $arquivo"
               lftp -c "
               set ftp:ssl-allow no;
               open ftp://anonymous:@ftp2.datasus.gov.br;
@@ -49,11 +49,11 @@ jobs:
               get -c \"$arquivo\"
               "
             else
-              echo "✅ Já existe: $arquivo"
+              echo "✅ Already exists: $arquivo"
             fi
-          done < /tmp/ultimos6.txt
+          done < /tmp/last6.txt
           
-      - name: Download notas técnicas completas
+      - name: Download all technical notes
         run: |
           lftp -c "
           set ftp:ssl-allow no;
@@ -65,8 +65,8 @@ jobs:
         run: |
           cd tabelas
           for arquivo in TabelaUnificada_*.zip; do
-            if [ -f "$arquivo" ] && ! grep -q "$arquivo" /tmp/ultimos6.txt; then
-              echo "🗑️  Removendo arquivo antigo: $arquivo"
+            if [ -f "$arquivo" ] && ! grep -q "$arquivo" /tmp/last6.txt; then
+              echo "🗑️  Removing old file: $arquivo"
               rm "$arquivo"
             fi
           done
@@ -81,42 +81,42 @@ jobs:
       - name: Generate README with file list
         run: |
           cat > README.md << EOF
-          # 📊 DATASUS - Tabela Unificada SIGTAP
+          # 📊 DATASUS - SIGTAP Unified Table
           
           [![Sync Status](https://github.com/${{ github.repository }}/actions/workflows/sync-datasus.yml/badge.svg)](https://github.com/${{ github.repository }}/actions/workflows/sync-datasus.yml)
-          [![Última Atualização](https://img.shields.io/badge/última%20atualização-$(date -u '+%Y--%m--%d')-blue)](https://github.com/${{ github.repository }}/commits/main)
+          [![Last Update](https://img.shields.io/badge/last%20update-$(date -u '+%Y--%m--%d')-blue)](https://github.com/${{ github.repository }}/commits/main)
           
-          Repositório automatizado com mirror dos arquivos da **Tabela Unificada do Sistema de Gerenciamento da Tabela de Procedimentos (SIGTAP)** do DATASUS.
+          Automated repository mirroring the files of the **Unified Table of the Procedures Table Management System (SIGTAP)** from DATASUS.
           
-          ## 📦 Tabelas Unificadas (Últimos 6 Meses)
+          ## 📦 Unified Tables (Last 6 Months)
           
-          > **Total:** $TABELAS_COUNT arquivos | **Tamanho:** $TOTAL_SIZE
+          > **Total:** $TABELAS_COUNT files | **Size:** $TOTAL_SIZE
           
-          | Arquivo | Período | Tamanho | Download |
-          |---------|---------|---------|----------|
+          | File | Period | Size | Download |
+          |------|--------|------|----------|
           EOF
           
           cd tabelas
           for arquivo in $(ls -r TabelaUnificada_*.zip 2>/dev/null); do
-            # Extrai ano/mês do nome (ex: TabelaUnificada_202601_v2601221740.zip)
+            # Extract year/month from the filename (e.g. TabelaUnificada_202601_v2601221740.zip)
             periodo=$(echo "$arquivo" | grep -oP '(?<=TabelaUnificada_)\d{6}')
             ano=${periodo:0:4}
             mes=${periodo:4:2}
             
-            # Formata mês
+            # Format month
             case $mes in
-              01) mes_nome="Janeiro" ;;
-              02) mes_nome="Fevereiro" ;;
-              03) mes_nome="Março" ;;
-              04) mes_nome="Abril" ;;
-              05) mes_nome="Maio" ;;
-              06) mes_nome="Junho" ;;
-              07) mes_nome="Julho" ;;
-              08) mes_nome="Agosto" ;;
-              09) mes_nome="Setembro" ;;
-              10) mes_nome="Outubro" ;;
-              11) mes_nome="Novembro" ;;
-              12) mes_nome="Dezembro" ;;
+              01) mes_nome="January" ;;
+              02) mes_nome="February" ;;
+              03) mes_nome="March" ;;
+              04) mes_nome="April" ;;
+              05) mes_nome="May" ;;
+              06) mes_nome="June" ;;
+              07) mes_nome="July" ;;
+              08) mes_nome="August" ;;
+              09) mes_nome="September" ;;
+              10) mes_nome="October" ;;
+              11) mes_nome="November" ;;
+              12) mes_nome="December" ;;
             esac
             
             tamanho=$(ls -lh "$arquivo" | awk '{print $5}')
@@ -128,13 +128,13 @@ jobs:
           
           cat >> README.md << EOF
           
-          ## 📄 Notas Técnicas
+          ## 📄 Technical Notes
           
-          > **Total:** $NOTAS_COUNT documentos
+          > **Total:** $NOTAS_COUNT documents
           
-          Todas as notas técnicas disponíveis estão na pasta [\`notastecnicas/\`](./notastecnicas/)
+          All available technical notes are in the [\`notastecnicas/\`](./notastecnicas/) folder
           
-          ### Últimas Notas
+          ### Latest Notes
           
           EOF
           
@@ -146,54 +146,54 @@ jobs:
           
           cat >> README.md << 'EOF'
           
-          ## 📖 Sobre o SIGTAP
+          ## 📖 About SIGTAP
           
-          A Tabela Unificada do SIGTAP contém:
-          - Procedimentos médicos e odontológicos
-          - Medicamentos e OPM (Órteses, Próteses e Materiais Especiais)
-          - Valores de reembolso do SUS
-          - CID-10 e compatibilidades
-          - Habilitações e classificações
+          The SIGTAP Unified Table contains:
+          - Medical and dental procedures
+          - Medications and OPM (Orthoses, Prostheses and Special Materials)
+          - SUS reimbursement values
+          - ICD-10 and compatibility mappings
+          - Authorizations and classifications
           
-          ## 🔄 Atualização Automática
+          ## 🔄 Automatic Update
           
-          Este repositório é atualizado **diariamente às 5h (horário de Brasília)** via GitHub Actions.
+          This repository is updated **daily at 5 AM (Brasília time)** via GitHub Actions.
           
-          **Fonte oficial:** [FTP DATASUS](ftp://ftp2.datasus.gov.br/pub/sistemas/tup/downloads/)
+          **Official source:** [DATASUS FTP](ftp://ftp2.datasus.gov.br/pub/sistemas/tup/downloads/)
           
-          ## 💻 Como Usar
+          ## 💻 How to Use
           
           ### Download via wget/curl
           ```bash
-          # Última tabela disponível
+          # Latest available table
           wget https://github.com/${{ github.repository }}/raw/main/tabelas/TabelaUnificada_202601_v2601221740.zip
           ```
           
-          ### Clone do repositório
+          ### Clone the repository
           ```bash
           git clone https://github.com/${{ github.repository }}.git
           cd SIGTAP/tabelas
           ```
           
-          ### GitHub API (programático)
+          ### GitHub API (programmatic)
           ```bash
           curl -s https://api.github.com/repos/${{ github.repository }}/contents/tabelas | jq -r '.[].download_url'
           ```
           
-          ## 📊 Estrutura dos Arquivos
+          ## 📊 File Structure
           
           ```
           SIGTAP/
-          ├── tabelas/                    # Tabelas unificadas (6 mais recentes)
+          ├── tabelas/                    # Unified tables (6 most recent)
           │   └── TabelaUnificada_*.zip
-          └── notastecnicas/              # Documentação técnica oficial
+          └── notastecnicas/              # Official technical documentation
               └── *.pdf
           ```
           
-          ## ⚖️ Licença e Dados Públicos
+          ## ⚖️ License and Public Data
           
-          Os dados são de **domínio público** e mantidos pelo Ministério da Saúde do Brasil.
-          Este repositório apenas facilita o acesso aos arquivos oficiais.
+          The data is **public domain** and maintained by the Brazilian Ministry of Health.
+          This repository only facilitates access to the official files.
           
           ---
           
@@ -201,7 +201,7 @@ jobs:
           
           EOF
           
-          echo "**🤖 Atualizado automaticamente** | Última execução: $LAST_UPDATE" >> README.md
+          echo "**🤖 Automatically updated** | Last run: $LAST_UPDATE" >> README.md
           echo "" >> README.md
           echo "</div>" >> README.md
       
@@ -210,7 +210,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Sincroniza com o remoto primeiro
+          # Sync with remote first
           git fetch origin main
           git reset --soft origin/main
           
@@ -219,22 +219,22 @@ jobs:
           if ! git diff --staged --quiet; then
             CHANGES=$(git diff --staged --name-status | head -10)
             
-            git commit -m "🔄 Atualização automática - $(date -u '+%Y-%m-%d %H:%M')" \
-                       -m "Alterações:" \
+            git commit -m "🔄 Automatic update - $(date -u '+%Y-%m-%d %H:%M')" \
+                       -m "Changes:" \
                        -m "$CHANGES"
             
-            # Push com retry em caso de conflito
+            # Push with retry in case of conflict
             for i in {1..3}; do
               if git push origin HEAD:main; then
-                echo "✅ Alterações enviadas com sucesso"
+                echo "✅ Changes pushed successfully"
                 break
               else
-                echo "⚠️  Tentativa $i falhou, sincronizando..."
+                echo "⚠️  Attempt $i failed, syncing..."
                 git fetch origin main
                 git rebase origin/main
                 sleep 2
               fi
             done
           else
-            echo "ℹ️  Nenhuma alteração detectada"
+            echo "ℹ️  No changes detected"
           fi
