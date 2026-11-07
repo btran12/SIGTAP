@@ -20,7 +20,7 @@ Automated repository mirroring the files of the **Unified Table of the Procedure
 
 ## 🔍 Monthly Diff Reports
 
-Comparison reports between consecutive monthly tables are available in [`diffs/index.html`](./diffs/index.html). Date-related changes are ignored.
+Download the latest tables and browse month-to-month comparison reports from [`index.html`](./index.html). Date-related changes are ignored.
 
 ## 📄 Technical Notes
 

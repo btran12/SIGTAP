@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import html
+import os
 import re
 import sys
 import zipfile
@@ -189,6 +190,26 @@ def period_label(period: str) -> str:
     if len(period) == 6 and period[:4].isdigit() and period[4:] in MONTHS:
         return f"{MONTHS[period[4:]]}/{period[:4]}"
     return period
+
+
+def human_size(num_bytes: int) -> str:
+    size = float(num_bytes)
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            if unit == "B":
+                return f"{int(size)} B"
+            return f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"
+
+
+def relative_url(from_dir: Path, target: Path) -> str:
+    """Return a POSIX-style relative URL from one path to another."""
+    try:
+        relative = os.path.relpath(target, start=from_dir)
+    except ValueError:
+        relative = str(target)
+    return Path(relative).as_posix()
 
 
 def is_date_column(name: str) -> bool:
@@ -670,11 +691,16 @@ def render_report(
     previous_link: str | None,
     next_link: str | None,
     generated_at: str,
+    home_link: str,
 ) -> str:
     previous_label = period_label(previous_period)
     current_label = period_label(current_period)
 
-    pager_parts = ['<a href="index.html">\u2190 All reports</a>']
+    pager_parts = [
+        f'<a href="{home_link}">\u2190 Home</a>',
+        f'<a href="{home_link}#downloads">\u2b07\ufe0f Downloads</a>',
+        '<a href="index.html">All reports</a>',
+    ]
     pager_parts.append('<span class="spacer"></span>')
     if previous_link:
         pager_parts.append(f'<a href="{previous_link}">\u2190 Previous month</a>')
@@ -764,12 +790,13 @@ def render_report(
 """
 
 
-def render_index(reports: list[dict], generated_at: str) -> str:
+def render_reports_table(reports: list[dict], link_prefix: str = "") -> str:
     rows = []
     for report in sorted(reports, key=lambda item: item["current_period"], reverse=True):
+        href = f"{link_prefix}{report['filename']}"
         rows.append(
             "<tr>"
-            f'<td><a href="{html.escape(report["filename"])}">'
+            f'<td><a href="{html.escape(href)}">'
             f'{html.escape(period_label(report["previous_period"]))} \u2192 '
             f'{html.escape(period_label(report["current_period"]))}</a></td>'
             f'<td><code>{html.escape(report["previous_zip"])}</code></td>'
@@ -781,16 +808,25 @@ def render_index(reports: list[dict], generated_at: str) -> str:
             "</tr>"
         )
 
-    table = (
+    if not rows:
+        return '<p class="empty">No monthly comparisons available yet.</p>'
+
+    return (
         '<div class="table-wrap"><table><thead><tr>'
         "<th>Comparison</th><th>Previous archive</th><th>Current archive</th>"
         "<th>Files changed</th><th>Added</th><th>Removed</th><th>Modified</th>"
         "</tr></thead><tbody>"
         + "".join(rows)
         + "</tbody></table></div>"
-        if rows
-        else '<p class="empty">No monthly comparisons available yet.</p>'
     )
+
+
+def render_index(
+    reports: list[dict],
+    generated_at: str,
+    home_link: str,
+) -> str:
+    table = render_reports_table(reports)
 
     return f"""<!doctype html>
 <html lang="en">
@@ -802,9 +838,14 @@ def render_index(reports: list[dict], generated_at: str) -> str:
 </head>
 <body>
 <header class="page-header">
+  <a class="back" href="{home_link}">\u2190 Home</a>
   <h1>SIGTAP Diff Reports</h1>
   <p>Monthly comparisons between consecutive DATASUS SIGTAP unified tables.</p>
   <p>Generated {html.escape(generated_at)} \u00b7 Date-related changes are ignored.</p>
+  <nav class="pager">
+    <a href="{home_link}#downloads">\u2b07\ufe0f Downloads</a>
+    <a href="{home_link}">Home</a>
+  </nav>
 </header>
 <main>
   <section>
@@ -816,6 +857,91 @@ def render_index(reports: list[dict], generated_at: str) -> str:
     <p>Each report compares every file in the previous archive against the current one and lists added,
        removed and modified records. Competence-date columns (such as <code>DT_COMPETENCIA</code>) and
        date-like values are ignored so that the monthly competence rollover does not appear as a change.</p>
+  </section>
+</main>
+<footer>Generated automatically from the DATASUS SIGTAP unified tables.</footer>
+</body>
+</html>
+"""
+
+
+def render_home(
+    archives: list[dict],
+    reports: list[dict],
+    generated_at: str,
+    tables_link: str,
+    diffs_link: str,
+    notes_link: str,
+    notes_count: int,
+) -> str:
+    total_size = sum(item["size_bytes"] for item in archives)
+    table_rows = []
+    for item in sorted(archives, key=lambda entry: entry["period"], reverse=True):
+        href = f"{tables_link}/{item['name']}"
+        table_rows.append(
+            "<tr>"
+            f'<td><code>{html.escape(item["name"])}</code></td>'
+            f'<td>{html.escape(period_label(item["period"]))}</td>'
+            f'<td class="num">{html.escape(item["size"])}</td>'
+            f'<td><a href="{html.escape(href)}">\u2b07\ufe0f Download</a></td>'
+            "</tr>"
+        )
+
+    if table_rows:
+        tables_table = (
+            '<div class="table-wrap"><table><thead><tr>'
+            "<th>File</th><th>Period</th><th>Size</th><th>Download</th>"
+            "</tr></thead><tbody>"
+            + "".join(table_rows)
+            + "</tbody></table></div>"
+        )
+    else:
+        tables_table = '<p class="empty">No tables available yet.</p>'
+
+    reports_table = render_reports_table(reports, f"{diffs_link}/")
+
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DATASUS SIGTAP Unified Table</title>
+<style>{CSS}</style>
+</head>
+<body>
+<header class="page-header">
+  <h1>DATASUS SIGTAP Unified Table</h1>
+  <p>Automated mirror of the DATASUS SIGTAP unified tables.</p>
+  <p>Generated {html.escape(generated_at)} \u00b7 {len(archives)} tables \u00b7 {len(reports)} diff reports</p>
+  <nav class="pager">
+    <a href="#downloads">\u2b07\ufe0f Downloads</a>
+    <a href="#diffs">Diff reports</a>
+    <a href="{notes_link}">Technical notes</a>
+  </nav>
+</header>
+<main>
+  <section class="cards">
+    <div class="card"><div class="value">{len(archives)}</div><div class="label">Monthly tables</div></div>
+    <div class="card"><div class="value">{human_size(total_size)}</div><div class="label">Total size</div></div>
+    <div class="card"><div class="value">{len(reports)}</div><div class="label">Diff reports</div></div>
+    <div class="card"><div class="value">{notes_count}</div><div class="label">Technical notes</div></div>
+  </section>
+
+  <section id="downloads">
+    <h2>Unified Tables</h2>
+    <p class="note">Download the most recent monthly archives from DATASUS.</p>
+    {tables_table}
+  </section>
+
+  <section id="diffs">
+    <h2>Monthly Diff Reports</h2>
+    <p class="note">Compare consecutive monthly tables. Date-related changes are ignored.</p>
+    {reports_table}
+  </section>
+
+  <section id="notes">
+    <h2>Technical Notes</h2>
+    <p><a href="{notes_link}">Browse the technical notes folder</a> ({notes_count} documents).</p>
   </section>
 </main>
 <footer>Generated automatically from the DATASUS SIGTAP unified tables.</footer>
@@ -836,80 +962,111 @@ def discover_archives(tables_dir: Path) -> list[tuple[str, Path]]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tables-dir", default="tabelas", help="Directory containing the ZIP archives")
-    parser.add_argument("--output-dir", default="diffs", help="Directory for the generated HTML files")
+    parser.add_argument("--output-dir", default="diffs", help="Directory for the generated diff HTML files")
+    parser.add_argument("--index-file", default="index.html", help="Path of the root landing page")
+    parser.add_argument("--notes-dir", default="notastecnicas", help="Directory containing the technical notes")
     args = parser.parse_args(argv)
 
     tables_dir = Path(args.tables_dir)
     output_dir = Path(args.output_dir)
+    index_file = Path(args.index_file)
+    notes_dir = Path(args.notes_dir)
 
     archives = discover_archives(tables_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    index_file.parent.mkdir(parents=True, exist_ok=True)
     for old_report in output_dir.glob("*.html"):
         old_report.unlink()
 
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
-    if len(archives) < 2:
-        print(
-            f"Need at least two archives in {tables_dir} to generate a report "
-            f"(found {len(archives)}). Writing an empty index.",
-            file=sys.stderr,
-        )
-        (output_dir / "index.html").write_text(
-            render_index([], generated_at), encoding="utf-8", newline="\n"
-        )
-        return 0
+    index_dir = index_file.parent
+    tables_link = relative_url(index_dir, tables_dir)
+    diffs_link = relative_url(index_dir, output_dir)
+    notes_link = relative_url(index_dir, notes_dir)
+    home_from_diffs = relative_url(output_dir, index_file)
+    notes_count = len(list(notes_dir.glob("*.pdf"))) if notes_dir.is_dir() else 0
+
+    archives_info = [
+        {
+            "period": period,
+            "name": path.name,
+            "size": human_size(path.stat().st_size),
+            "size_bytes": path.stat().st_size,
+        }
+        for period, path in archives
+    ]
 
     reports: list[dict] = []
 
-    for index in range(1, len(archives)):
-        previous_period, previous_zip = archives[index - 1]
-        current_period, current_zip = archives[index]
-        print(f"Comparing {previous_zip.name} -> {current_zip.name}")
-
-        summary, results = compare_archive_pair(previous_zip, current_zip)
-        filename = f"{previous_period}_to_{current_period}.html"
-
-        reports.append(
-            {
-                "previous_period": previous_period,
-                "current_period": current_period,
-                "previous_zip": previous_zip.name,
-                "current_zip": current_zip.name,
-                "filename": filename,
-                "files_changed": summary["files_changed"],
-                "added": summary["added"],
-                "removed": summary["removed"],
-                "modified": summary["modified"],
-            }
-        )
-
-        previous_link = None
-        if index > 1:
-            previous_link = f"{archives[index - 2][0]}_to_{previous_period}.html"
-        next_link = None
-        if index < len(archives) - 1:
-            next_link = f"{current_period}_to_{archives[index + 1][0]}.html"
-
-        report_html = render_report(
-            summary,
-            results,
-            previous_period,
-            current_period,
-            previous_link,
-            next_link,
-            generated_at,
-        )
-        (output_dir / filename).write_text(report_html, encoding="utf-8", newline="\n")
+    if len(archives) < 2:
         print(
-            f"  files changed: {summary['files_changed']}, "
-            f"added: {summary['added']}, removed: {summary['removed']}, "
-            f"modified: {summary['modified']}"
+            f"Need at least two archives in {tables_dir} to generate a diff report "
+            f"(found {len(archives)}). The diff index will be empty.",
+            file=sys.stderr,
         )
+    else:
+        for index in range(1, len(archives)):
+            previous_period, previous_zip = archives[index - 1]
+            current_period, current_zip = archives[index]
+            print(f"Comparing {previous_zip.name} -> {current_zip.name}")
 
-    index_html = render_index(reports, generated_at)
+            summary, results = compare_archive_pair(previous_zip, current_zip)
+            filename = f"{previous_period}_to_{current_period}.html"
+
+            reports.append(
+                {
+                    "previous_period": previous_period,
+                    "current_period": current_period,
+                    "previous_zip": previous_zip.name,
+                    "current_zip": current_zip.name,
+                    "filename": filename,
+                    "files_changed": summary["files_changed"],
+                    "added": summary["added"],
+                    "removed": summary["removed"],
+                    "modified": summary["modified"],
+                }
+            )
+
+            previous_link = None
+            if index > 1:
+                previous_link = f"{archives[index - 2][0]}_to_{previous_period}.html"
+            next_link = None
+            if index < len(archives) - 1:
+                next_link = f"{current_period}_to_{archives[index + 1][0]}.html"
+
+            report_html = render_report(
+                summary,
+                results,
+                previous_period,
+                current_period,
+                previous_link,
+                next_link,
+                generated_at,
+                home_from_diffs,
+            )
+            (output_dir / filename).write_text(report_html, encoding="utf-8", newline="\n")
+            print(
+                f"  files changed: {summary['files_changed']}, "
+                f"added: {summary['added']}, removed: {summary['removed']}, "
+                f"modified: {summary['modified']}"
+            )
+
+    index_html = render_index(reports, generated_at, home_from_diffs)
     (output_dir / "index.html").write_text(index_html, encoding="utf-8", newline="\n")
-    print(f"Wrote {len(reports)} report(s) and index to {output_dir}")
+
+    home_html = render_home(
+        archives_info,
+        reports,
+        generated_at,
+        tables_link,
+        diffs_link,
+        notes_link,
+        notes_count,
+    )
+    index_file.write_text(home_html, encoding="utf-8", newline="\n")
+
+    print(f"Wrote {len(reports)} report(s) to {output_dir} and landing page to {index_file}")
     return 0
 
 
