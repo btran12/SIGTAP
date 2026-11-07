@@ -18,6 +18,10 @@ Automated repository mirroring the files of the **Unified Table of the Procedure
 | `TabelaUnificada_202607_v2610231237.zip` | July/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202607_v2610231237.zip) |
 | `TabelaUnificada_202606_v2610231231.zip` | June/2026 | 2.1M | [⬇️ Download](https://github.com/btran12/SIGTAP/raw/main/tabelas/TabelaUnificada_202606_v2610231231.zip) |
 
+## 🔍 Monthly Diff Reports
+
+Comparison reports between consecutive monthly tables are available in [`diffs/index.html`](./diffs/index.html). Date-related changes are ignored.
+
 ## 📄 Technical Notes
 
 > **Total:** 227 documents

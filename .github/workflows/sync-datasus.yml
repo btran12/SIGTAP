@@ -126,6 +126,14 @@ jobs:
           done
           cd ..
           
+          cat >> README.md << 'EOF'
+          
+          ## 🔍 Monthly Diff Reports
+          
+          Comparison reports between consecutive monthly tables are available in [`diffs/index.html`](./diffs/index.html). Date-related changes are ignored.
+          
+          EOF
+          
           cat >> README.md << EOF
           
           ## 📄 Technical Notes
@@ -204,6 +212,9 @@ jobs:
           echo "**🤖 Automatically updated** | Last run: $LAST_UPDATE" >> README.md
           echo "" >> README.md
           echo "</div>" >> README.md
+      
+      - name: Generate monthly diff reports
+        run: python3 scripts/generate_diff_reports.py
       
       - name: Commit and push changes
         run: |

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIGTAP Diff Reports</title>
+<style>
+:root {
+  --bg: #f6f8fa;
+  --panel: #ffffff;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --muted: #59636e;
+  --accent: #0969da;
+  --added-bg: #e6ffec;
+  --added-text: #1a7f37;
+  --removed-bg: #ffebe9;
+  --removed-text: #cf222e;
+  --modified-bg: #fff8c5;
+  --modified-text: #7d4e00;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 0 0 4rem;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: rgba(175, 184, 193, 0.2);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+header.page-header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem max(1rem, calc((100vw - 1200px) / 2));
+  margin-bottom: 1.5rem;
+}
+header.page-header h1 { margin: 0.35rem 0; font-size: 1.6rem; }
+header.page-header p { margin: 0.25rem 0; color: var(--muted); }
+header.page-header .back { font-weight: 600; }
+.pager { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem; font-weight: 600; }
+.pager .spacer { flex: 1; }
+main { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.75rem; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem 1rem; }
+.card .value { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.card .label { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.card.added .value { color: var(--added-text); }
+.card.removed .value { color: var(--removed-text); }
+.card.modified .value { color: var(--modified-text); }
+section { margin-bottom: 2rem; }
+h2 { font-size: 1.2rem; margin: 0 0 0.75rem; }
+input.filter {
+  width: 100%;
+  max-width: 380px;
+  padding: 0.45rem 0.65rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+table { width: 100%; border-collapse: collapse; background: var(--panel); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.75rem; }
+th, td { border-bottom: 1px solid var(--border); padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+th { background: #eef1f4; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); position: sticky; top: 0; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #f6f8fa; }
+.badge { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+.badge.added { background: var(--added-bg); color: var(--added-text); }
+.badge.removed { background: var(--removed-bg); color: var(--removed-text); }
+.badge.modified { background: var(--modified-bg); color: var(--modified-text); }
+.badge.unchanged { background: #eaeef2; color: var(--muted); }
+.badge.binary { background: #ddf4ff; color: #0969da; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.added { color: var(--added-text); font-weight: 600; }
+td.removed { color: var(--removed-text); font-weight: 600; }
+td.modified { color: var(--modified-text); font-weight: 600; }
+details.file { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.65rem; }
+details.file > summary { cursor: pointer; padding: 0.65rem 0.85rem; font-weight: 600; list-style: none; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+details.file > summary::-webkit-details-marker { display: none; }
+details.file > summary::before { content: "\25B8"; color: var(--muted); font-size: 0.9em; }
+details.file[open] > summary::before { content: "\25BE"; }
+details.file .body { padding: 0.25rem 0.85rem 0.85rem; border-top: 1px solid var(--border); }
+details.file h3 { font-size: 0.95rem; margin: 0.85rem 0 0.4rem; }
+.counts { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
+.note { color: var(--muted); font-size: 0.85rem; margin: 0.25rem 0 0.5rem; }
+.empty { color: var(--muted); font-style: italic; }
+.legend { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
+.legend span { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.9rem; }
+footer { max-width: 1200px; margin: 2rem auto 0; padding: 1rem; color: var(--muted); font-size: 0.85rem; text-align: center; }
+</style>
+</head>
+<body>
+<header class="page-header">
+  <h1>SIGTAP Diff Reports</h1>
+  <p>Monthly comparisons between consecutive DATASUS SIGTAP unified tables.</p>
+  <p>Generated 2026-11-07 15:42 UTC · Date-related changes are ignored.</p>
+</header>
+<main>
+  <section>
+    <h2>Monthly comparisons</h2>
+    <div class="table-wrap"><table><thead><tr><th>Comparison</th><th>Previous archive</th><th>Current archive</th><th>Files changed</th><th>Added</th><th>Removed</th><th>Modified</th></tr></thead><tbody><tr><td><a href="202610_to_202611.html">October/2026 → November/2026</a></td><td><code>TabelaUnificada_202610_v2610271043.zip</code></td><td><code>TabelaUnificada_202611_v2611051737.zip</code></td><td class="num">16</td><td class="num added">1431</td><td class="num removed">113</td><td class="num modified">71</td></tr><tr><td><a href="202609_to_202610.html">September/2026 → October/2026</a></td><td><code>TabelaUnificada_202609_v2610261311.zip</code></td><td><code>TabelaUnificada_202610_v2610271043.zip</code></td><td class="num">16</td><td class="num added">1080</td><td class="num removed">506</td><td class="num modified">21</td></tr><tr><td><a href="202608_to_202609.html">August/2026 → September/2026</a></td><td><code>TabelaUnificada_202608_v2610231712.zip</code></td><td><code>TabelaUnificada_202609_v2610261311.zip</code></td><td class="num">11</td><td class="num added">582</td><td class="num removed">2</td><td class="num modified">21</td></tr><tr><td><a href="202607_to_202608.html">July/2026 → August/2026</a></td><td><code>TabelaUnificada_202607_v2610231237.zip</code></td><td><code>TabelaUnificada_202608_v2610231712.zip</code></td><td class="num">19</td><td class="num added">1913</td><td class="num removed">676</td><td class="num modified">14</td></tr><tr><td><a href="202606_to_202607.html">June/2026 → July/2026</a></td><td><code>TabelaUnificada_202606_v2610231231.zip</code></td><td><code>TabelaUnificada_202607_v2610231237.zip</code></td><td class="num">14</td><td class="num added">671</td><td class="num removed">62</td><td class="num modified">1</td></tr></tbody></table></div>
+  </section>
+  <section>
+    <h2>About</h2>
+    <p>Each report compares every file in the previous archive against the current one and lists added,
+       removed and modified records. Competence-date columns (such as <code>DT_COMPETENCIA</code>) and
+       date-like values are ignored so that the monthly competence rollover does not appear as a change.</p>
+  </section>
+</main>
+<footer>Generated automatically from the DATASUS SIGTAP unified tables.</footer>
+</body>
+</html>
