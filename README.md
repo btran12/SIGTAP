@@ -1,7 +1,7 @@
 # 📊 DATASUS - SIGTAP Unified Table
 
 [![Sync Status](https://github.com/btran12/SIGTAP/actions/workflows/sync-datasus.yml/badge.svg)](https://github.com/btran12/SIGTAP/actions/workflows/sync-datasus.yml)
-[![Last Update](https://img.shields.io/badge/last%20update-2026--11--07-blue)](https://github.com/btran12/SIGTAP/commits/main)
+[![Last Update](https://img.shields.io/badge/last%20update-2026--11--08-blue)](https://github.com/btran12/SIGTAP/commits/main)
 
 Automated repository mirroring the files of the **Unified Table of the Procedures Table Management System (SIGTAP)** from DATASUS.
 
@@ -21,6 +21,7 @@ Automated repository mirroring the files of the **Unified Table of the Procedure
 ## 🔍 Monthly Diff Reports
 
 Download the latest tables and browse month-to-month comparison reports from [`index.html`](./index.html). Date-related changes are ignored.
+
 
 ## 📄 Technical Notes
 
@@ -89,6 +90,6 @@ This repository only facilitates access to the official files.
 
 <div align="center">
 
-**🤖 Automatically updated** | Last run: 2026-11-07 11:51:21 BRT
+**🤖 Automatically updated** | Last run: 2026-11-08 11:57:32 BRT
 
 </div>
