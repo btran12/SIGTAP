@@ -161,6 +161,304 @@ details.file h3 { font-size: 0.95rem; margin: 0.85rem 0 0.4rem; }
 .legend { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
 .legend span { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.9rem; }
 footer { max-width: 1200px; margin: 2rem auto 0; padding: 1rem; color: var(--muted); font-size: 0.85rem; text-align: center; }
+.toast-container {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(380px, calc(100vw - 2rem));
+}
+.toast {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.18);
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  animation: toast-in 0.18s ease-out;
+}
+.toast.success { border-left-color: var(--added-text); }
+.toast.warning { border-left-color: var(--modified-text); }
+.toast.error { border-left-color: var(--removed-text); }
+.toast.toast-out { opacity: 0; transform: translateY(6px); transition: opacity 0.16s ease-in, transform 0.16s ease-in; }
+.toast .toast-body { flex: 1; min-width: 0; }
+.toast .toast-title { font-weight: 700; margin: 0 0 0.15rem; }
+.toast .toast-message { margin: 0; color: var(--muted); font-size: 0.9rem; overflow-wrap: anywhere; }
+.toast .toast-action { display: inline-block; margin-top: 0.35rem; font-weight: 600; }
+.toast .toast-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+}
+.toast .toast-close:hover { color: var(--text); }
+.notify-toggle {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.notify-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.notify-toggle[disabled] { opacity: 0.6; cursor: not-allowed; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 600px) {
+  .toast-container { left: 1rem; right: 1rem; bottom: 1rem; width: auto; }
+}
+"""
+
+TOAST_SCRIPT = r"""
+<script>
+(function () {
+  "use strict";
+
+  var SEEN_KEY = "sigtap.lastSeenPeriod";
+  var ENABLED_KEY = "sigtap.notificationsEnabled";
+
+  var body = document.body;
+  var latestPeriod = body.getAttribute("data-latest-period") || "";
+  var latestLabel = body.getAttribute("data-latest-label") || latestPeriod;
+  var latestHref = body.getAttribute("data-latest-href") || "";
+  var latestDiffLabel = body.getAttribute("data-latest-diff-label") || "";
+
+  function read(key) {
+    try { return window.localStorage.getItem(key); } catch (error) { return null; }
+  }
+  function write(key, value) {
+    try { window.localStorage.setItem(key, value); } catch (error) { /* ignore */ }
+  }
+
+  function toastContainer() {
+    var element = document.getElementById("toast-container");
+    if (!element) {
+      element = document.createElement("div");
+      element.id = "toast-container";
+      element.className = "toast-container";
+      element.setAttribute("role", "status");
+      element.setAttribute("aria-live", "polite");
+      document.body.appendChild(element);
+    }
+    return element;
+  }
+
+  function dismissToast(element) {
+    if (!element || element.classList.contains("toast-out")) return;
+    element.classList.add("toast-out");
+    window.setTimeout(function () {
+      if (element.parentNode) element.parentNode.removeChild(element);
+    }, 180);
+  }
+
+  function showToast(options) {
+    options = options || {};
+    var element = document.createElement("div");
+    element.className = "toast " + (options.type || "info");
+
+    var content = document.createElement("div");
+    content.className = "toast-body";
+
+    var title = document.createElement("p");
+    title.className = "toast-title";
+    title.textContent = options.title || "";
+    content.appendChild(title);
+
+    if (options.message) {
+      var message = document.createElement("p");
+      message.className = "toast-message";
+      message.textContent = options.message;
+      content.appendChild(message);
+    }
+
+    if (options.actionHref) {
+      var action = document.createElement("a");
+      action.className = "toast-action";
+      action.href = options.actionHref;
+      action.textContent = options.actionLabel || "View";
+      content.appendChild(action);
+    }
+
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "toast-close";
+    close.setAttribute("aria-label", "Dismiss notification");
+    close.textContent = "\u00d7";
+    close.addEventListener("click", function () { dismissToast(element); });
+
+    element.appendChild(content);
+    element.appendChild(close);
+    toastContainer().appendChild(element);
+
+    var duration = options.duration == null ? 9000 : options.duration;
+    if (duration > 0) {
+      var timer = window.setTimeout(function () { dismissToast(element); }, duration);
+      element.addEventListener("mouseenter", function () { window.clearTimeout(timer); });
+      element.addEventListener("mouseleave", function () {
+        timer = window.setTimeout(function () { dismissToast(element); }, 3000);
+      });
+    }
+    return element;
+  }
+
+  window.sigtapShowToast = showToast;
+
+  function notificationsSupported() {
+    return typeof window.Notification !== "undefined" && window.isSecureContext !== false;
+  }
+
+  function notificationsEnabled() {
+    return read(ENABLED_KEY) === "1" &&
+      notificationsSupported() &&
+      window.Notification.permission === "granted";
+  }
+
+  function updateToggle() {
+    var button = document.getElementById("notify-toggle");
+    if (!button) return;
+    if (!notificationsSupported()) {
+      button.hidden = true;
+      return;
+    }
+    if (window.Notification.permission === "denied") {
+      button.textContent = "\ud83d\udd15 Notifications blocked";
+      button.disabled = true;
+      button.title = "Notifications are blocked in your browser settings.";
+      return;
+    }
+    if (notificationsEnabled()) {
+      button.textContent = "\ud83d\udd15 Disable notifications";
+      button.title = "Stop on-device update notifications.";
+    } else {
+      button.textContent = "\ud83d\udd14 Enable notifications";
+      button.title = "Get an on-device notification when a new monthly table is published.";
+    }
+  }
+
+  function notifyDevice() {
+    if (!notificationsEnabled()) return;
+    try {
+      var notification = new window.Notification("New SIGTAP update", {
+        body: latestDiffLabel
+          ? latestLabel + " is available. " + latestDiffLabel + "."
+          : latestLabel + " is available.",
+        tag: "sigtap-update-" + latestPeriod
+      });
+      notification.onclick = function () {
+        window.focus();
+        if (latestHref) window.location.href = latestHref;
+        notification.close();
+      };
+    } catch (error) { /* notifications are best-effort */ }
+  }
+
+  function checkForUpdates() {
+    if (!latestPeriod) return;
+    var seen = read(SEEN_KEY);
+    if (!seen) {
+      write(SEEN_KEY, latestPeriod);
+      return;
+    }
+    if (String(seen) >= String(latestPeriod)) return;
+    write(SEEN_KEY, latestPeriod);
+    showToast({
+      title: "New SIGTAP update",
+      message: latestDiffLabel
+        ? latestLabel + " is available. " + latestDiffLabel + "."
+        : latestLabel + " is available.",
+      type: "success",
+      actionHref: latestHref || null,
+      actionLabel: latestDiffLabel ? "View latest comparison" : "View downloads",
+      duration: 12000
+    });
+    notifyDevice();
+  }
+
+  function setupToggle() {
+    var button = document.getElementById("notify-toggle");
+    if (!button) return;
+    button.addEventListener("click", function () {
+      if (!notificationsSupported()) {
+        showToast({
+          title: "Notifications unavailable",
+          message: "This browser does not support on-device notifications.",
+          type: "warning"
+        });
+        return;
+      }
+      if (window.Notification.permission === "denied") {
+        showToast({
+          title: "Notifications blocked",
+          message: "Allow notifications for this site in your browser settings.",
+          type: "warning"
+        });
+        return;
+      }
+      if (notificationsEnabled()) {
+        write(ENABLED_KEY, "0");
+        updateToggle();
+        showToast({
+          title: "Notifications disabled",
+          message: "You will no longer receive on-device update alerts.",
+          type: "info"
+        });
+        return;
+      }
+
+      var finished = false;
+      function finish() {
+        if (finished) return;
+        finished = true;
+        if (window.Notification.permission === "granted") {
+          write(ENABLED_KEY, "1");
+          updateToggle();
+          showToast({
+            title: "Notifications enabled",
+            message: "You will be notified when a new monthly table is published.",
+            type: "success"
+          });
+        } else {
+          updateToggle();
+          showToast({
+            title: "Notifications not enabled",
+            message: "Permission was not granted.",
+            type: "warning"
+          });
+        }
+      }
+
+      if (window.Notification.permission === "granted") {
+        finish();
+        return;
+      }
+      var result = window.Notification.requestPermission(finish);
+      if (result && typeof result.then === "function") {
+        result.then(finish);
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    updateToggle();
+    setupToggle();
+    checkForUpdates();
+  });
+})();
+</script>
 """
 
 
@@ -210,6 +508,16 @@ def relative_url(from_dir: Path, target: Path) -> str:
     except ValueError:
         relative = str(target)
     return Path(relative).as_posix()
+
+
+def body_attributes(latest: dict, latest_href: str) -> str:
+    """Data attributes consumed by the toast/notification script."""
+    return (
+        f'data-latest-period="{html.escape(latest.get("period", ""))}" '
+        f'data-latest-label="{html.escape(latest.get("label", ""))}" '
+        f'data-latest-href="{html.escape(latest_href)}" '
+        f'data-latest-diff-label="{html.escape(latest.get("diff_label", ""))}"'
+    )
 
 
 def is_date_column(name: str) -> bool:
@@ -692,6 +1000,7 @@ def render_report(
     next_link: str | None,
     generated_at: str,
     home_link: str,
+    latest: dict,
 ) -> str:
     previous_label = period_label(previous_period)
     current_label = period_label(current_period)
@@ -700,6 +1009,7 @@ def render_report(
         f'<a href="{home_link}">\u2190 Home</a>',
         f'<a href="{home_link}#downloads">\u2b07\ufe0f Downloads</a>',
         '<a href="index.html">All reports</a>',
+        '<button id="notify-toggle" class="notify-toggle" type="button">\U0001F514 Enable notifications</button>',
     ]
     pager_parts.append('<span class="spacer"></span>')
     if previous_link:
@@ -723,6 +1033,8 @@ def render_report(
     modified = summary['modified']
     files_total = summary['files_total']
     pager = ''.join(pager_parts)
+    latest_href = latest["filename"] if latest.get("filename") else f"{home_link}#downloads"
+    body_attrs = body_attributes(latest, latest_href)
 
     return f"""<!doctype html>
 <html lang="en">
@@ -732,7 +1044,7 @@ def render_report(
 <title>SIGTAP diff: {html.escape(previous_label)} \u2192 {html.escape(current_label)}</title>
 <style>{CSS}</style>
 </head>
-<body>
+<body {body_attrs}>
 <header class="page-header">
   <a class="back" href="index.html">\u2190 All reports</a>
   <h1>SIGTAP Diff Report</h1>
@@ -785,6 +1097,7 @@ def render_report(
   }});
 }})();
 </script>
+{TOAST_SCRIPT}
 </body>
 </html>
 """
@@ -825,8 +1138,11 @@ def render_index(
     reports: list[dict],
     generated_at: str,
     home_link: str,
+    latest: dict,
 ) -> str:
     table = render_reports_table(reports)
+    latest_href = latest["filename"] if latest.get("filename") else f"{home_link}#downloads"
+    body_attrs = body_attributes(latest, latest_href)
 
     return f"""<!doctype html>
 <html lang="en">
@@ -836,7 +1152,7 @@ def render_index(
 <title>SIGTAP Diff Reports</title>
 <style>{CSS}</style>
 </head>
-<body>
+<body {body_attrs}>
 <header class="page-header">
   <a class="back" href="{home_link}">\u2190 Home</a>
   <h1>SIGTAP Diff Reports</h1>
@@ -845,6 +1161,7 @@ def render_index(
   <nav class="pager">
     <a href="{home_link}#downloads">\u2b07\ufe0f Downloads</a>
     <a href="{home_link}">Home</a>
+    <button id="notify-toggle" class="notify-toggle" type="button">\U0001F514 Enable notifications</button>
   </nav>
 </header>
 <main>
@@ -860,6 +1177,7 @@ def render_index(
   </section>
 </main>
 <footer>Generated automatically from the DATASUS SIGTAP unified tables.</footer>
+{TOAST_SCRIPT}
 </body>
 </html>
 """
@@ -873,8 +1191,11 @@ def render_home(
     diffs_link: str,
     notes_link: str,
     notes_count: int,
+    latest: dict,
 ) -> str:
     total_size = sum(item["size_bytes"] for item in archives)
+    latest_href = f"{diffs_link}/{latest['filename']}" if latest.get("filename") else "#downloads"
+    body_attrs = body_attributes(latest, latest_href)
     table_rows = []
     for item in sorted(archives, key=lambda entry: entry["period"], reverse=True):
         href = f"{tables_link}/{item['name']}"
@@ -908,7 +1229,7 @@ def render_home(
 <title>DATASUS SIGTAP Unified Table</title>
 <style>{CSS}</style>
 </head>
-<body>
+<body {body_attrs}>
 <header class="page-header">
   <h1>DATASUS SIGTAP Unified Table</h1>
   <p>Automated mirror of the DATASUS SIGTAP unified tables.</p>
@@ -917,6 +1238,7 @@ def render_home(
     <a href="#downloads">\u2b07\ufe0f Downloads</a>
     <a href="#diffs">Diff reports</a>
     <a href="{notes_link}">Technical notes</a>
+    <button id="notify-toggle" class="notify-toggle" type="button">\U0001F514 Enable notifications</button>
   </nav>
 </header>
 <main>
@@ -945,6 +1267,7 @@ def render_home(
   </section>
 </main>
 <footer>Generated automatically from the DATASUS SIGTAP unified tables.</footer>
+{TOAST_SCRIPT}
 </body>
 </html>
 """
@@ -997,6 +1320,21 @@ def main(argv: list[str] | None = None) -> int:
         for period, path in archives
     ]
 
+    latest_period = archives[-1][0] if archives else ""
+    latest_filename = ""
+    latest_diff_label = ""
+    if len(archives) >= 2:
+        latest_filename = f"{archives[-2][0]}_to_{archives[-1][0]}.html"
+        latest_diff_label = (
+            f"{period_label(archives[-2][0])} \u2192 {period_label(archives[-1][0])}"
+        )
+    latest = {
+        "period": latest_period,
+        "label": period_label(latest_period),
+        "diff_label": latest_diff_label,
+        "filename": latest_filename,
+    }
+
     reports: list[dict] = []
 
     if len(archives) < 2:
@@ -1044,6 +1382,7 @@ def main(argv: list[str] | None = None) -> int:
                 next_link,
                 generated_at,
                 home_from_diffs,
+                latest,
             )
             (output_dir / filename).write_text(report_html, encoding="utf-8", newline="\n")
             print(
@@ -1052,7 +1391,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"modified: {summary['modified']}"
             )
 
-    index_html = render_index(reports, generated_at, home_from_diffs)
+    index_html = render_index(reports, generated_at, home_from_diffs, latest)
     (output_dir / "index.html").write_text(index_html, encoding="utf-8", newline="\n")
 
     home_html = render_home(
@@ -1063,6 +1402,7 @@ def main(argv: list[str] | None = None) -> int:
         diffs_link,
         notes_link,
         notes_count,
+        latest,
     )
     index_file.write_text(home_html, encoding="utf-8", newline="\n")
 

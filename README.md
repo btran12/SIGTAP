@@ -22,6 +22,7 @@ Automated repository mirroring the files of the **Unified Table of the Procedure
 
 Download the latest tables and browse month-to-month comparison reports from [`index.html`](./index.html). Date-related changes are ignored.
 
+Open `index.html` and use the 🔔 button to enable on-device notifications when a new monthly table is published.
 
 ## 📄 Technical Notes
 
